@@ -1,0 +1,1379 @@
+--[[
+╔══════════════════════════════════════════════════════╗
+║   ShokhHacks  –  dev: Shokh   (v4.0)                ║
+║   Key: shokh   |   Til: EN / RU / UZ                ║
+║   Default rang: Midnight Blue (Settings'da o'zgaradi)║
+╚══════════════════════════════════════════════════════╝
+  Kategoriyalar:
+  • Visuals  – ESP (Highlight, Team Check, Box, Tracers,
+                Name, Health Tag, Rainbow/Color), Watermark
+  • Movement – Speed, Jump, Infinite Jump, Noclip, Player FOV
+  • Effects  – Full Bright, No Shadow, Fast Mode (faqat
+                bino/textura — gun/car/player himoyalangan),
+                Anti-AFK
+  • Settings – Til, Accent rang, UI key, Config slotlar
+]]
+
+local Players          = game:GetService("Players")
+local RunService       = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Lighting         = game:GetService("Lighting")
+local TweenService     = game:GetService("TweenService")
+local HttpService      = game:GetService("HttpService")
+local VirtualUser       = game:GetService("VirtualUser")
+
+local LP     = Players.LocalPlayer
+local PGui   = LP:WaitForChild("PlayerGui")
+local Camera = workspace.CurrentCamera
+
+-- ══════════════════════════════════════════════════════
+--  TIL TIZIMI (i18n)
+-- ══════════════════════════════════════════════════════
+local lang = "en"
+
+local L = {
+en = {
+    chooseLang="Choose Language", enterKey="Enter Key", verify="VERIFY",
+    wrongKey="Wrong key!", success="Success!", discord="Discord",
+    tabVisuals="Visuals", tabMovement="Movement", tabEffects="Effects", tabSettings="Settings",
+    secEsp="ESP", secInfo="INFO",
+    espMain="Highlight", espMainSub="Show player outline through walls",
+    teamCheck="Team Check", teamCheckSub="Hide ESP for teammates",
+    boxEsp="Box ESP", boxEspSub="Draw a box around players",
+    tracers="Tracers", tracersSub="Line from screen bottom to player",
+    nameEsp="Name ESP", nameEspSub="Show player name above head",
+    healthTag="Health Tag", healthTagSub="HP bar + number above head",
+    rainbowEsp="Rainbow ESP", rainbowEspSub="Cycles ESP color",
+    espColor="ESP Color",
+    watermark="Watermark", watermarkSub="Name + FPS at top",
+    secSpeed="SPEED", speedHack="Speed Hack", speedHackSub="Increase WalkSpeed",
+    speedVal="Speed Value",
+    secJump="JUMP", jumpHack="Jump Hack", jumpHackSub="Increase JumpPower",
+    jumpVal="Jump Value", infJump="Infinite Jump", infJumpSub="Jump again in mid-air",
+    secMove="MOVEMENT", noclip="Noclip", noclipSub="Walk through walls",
+    playerFov="Player FOV", playerFovSub="Camera field of view",
+    secLight="LIGHTING", fullBright="Full Bright", fullBrightSub="Maximum ambient light",
+    noShadow="No Shadow", noShadowSub="Disable shadow rendering",
+    secPerf="PERFORMANCE", fastMode="Fast Mode",
+    fastModeSub="Removes textures on buildings only — guns/cars/players untouched",
+    antiAfk="Anti-AFK", antiAfkSub="Prevents idle kick",
+    secLangCol="LANGUAGE & COLOR", language="Language", accentColor="Accent Color",
+    secKeybind="KEYBIND", toggleKey="Toggle UI Key",
+    secConfig="CONFIG SLOTS", save="Save", load="Load",
+    welcome="Welcome, ", toggleHint="to toggle UI", saved="Saved", loaded="Loaded",
+    on="Yoqildi", off="O'chirildi",
+},
+ru = {
+    chooseLang="Выберите язык", enterKey="Введите ключ", verify="ПРОВЕРИТЬ",
+    wrongKey="Неверный ключ!", success="Успешно!", discord="Discord",
+    tabVisuals="Визуал", tabMovement="Движение", tabEffects="Эффекты", tabSettings="Настройки",
+    secEsp="ESP", secInfo="ИНФО",
+    espMain="Подсветка", espMainSub="Показывает игроков сквозь стены",
+    teamCheck="Проверка команды", teamCheckSub="Скрывает ESP для тиммейтов",
+    boxEsp="Box ESP", boxEspSub="Рисует рамку вокруг игроков",
+    tracers="Трейсеры", tracersSub="Линия от низа экрана до игрока",
+    nameEsp="Имя", nameEspSub="Показывает имя над головой",
+    healthTag="Здоровье", healthTagSub="Полоса HP + число над головой",
+    rainbowEsp="Радужный ESP", rainbowEspSub="Меняет цвет ESP",
+    espColor="Цвет ESP",
+    watermark="Водяной знак", watermarkSub="Имя + FPS сверху",
+    secSpeed="СКОРОСТЬ", speedHack="Ускорение", speedHackSub="Увеличивает WalkSpeed",
+    speedVal="Значение скорости",
+    secJump="ПРЫЖОК", jumpHack="Высокий прыжок", jumpHackSub="Увеличивает JumpPower",
+    jumpVal="Значение прыжка", infJump="Бесконечный прыжок", infJumpSub="Прыжок в воздухе",
+    secMove="ДВИЖЕНИЕ", noclip="Noclip", noclipSub="Проходить сквозь стены",
+    playerFov="Обзор камеры", playerFovSub="Поле зрения камеры",
+    secLight="ОСВЕЩЕНИЕ", fullBright="Полная яркость", fullBrightSub="Максимальное освещение",
+    noShadow="Без теней", noShadowSub="Отключает рендер теней",
+    secPerf="ПРОИЗВОДИТЕЛЬНОСТЬ", fastMode="Быстрый режим",
+    fastModeSub="Убирает текстуры только у зданий — оружие/машины/игроки не тронуты",
+    antiAfk="Анти-АФК", antiAfkSub="Не даёт кикнуть за бездействие",
+    secLangCol="ЯЗЫК И ЦВЕТ", language="Язык", accentColor="Цвет акцента",
+    secKeybind="КЛАВИША", toggleKey="Клавиша открытия UI",
+    secConfig="СЛОТЫ КОНФИГА", save="Сохранить", load="Загрузить",
+    welcome="Добро пожаловать, ", toggleHint="чтобы открыть/закрыть UI", saved="Сохранено", loaded="Загружено",
+    on="Включено", off="Выключено",
+},
+uz = {
+    chooseLang="Tilni tanlang", enterKey="Keyni kiriting", verify="TEKSHIRISH",
+    wrongKey="Noto'g'ri key!", success="Muvaffaqiyatli!", discord="Discord",
+    tabVisuals="Vizual", tabMovement="Harakat", tabEffects="Effektlar", tabSettings="Sozlamalar",
+    secEsp="ESP", secInfo="INFO",
+    espMain="Highlight", espMainSub="Devorlar orqali o'yinchilarni ko'rsatadi",
+    teamCheck="Team Check", teamCheckSub="Jamoadoshlarni ESP'dan yashiradi",
+    boxEsp="Box ESP", boxEspSub="O'yinchi atrofida ramka chizadi",
+    tracers="Tracers", tracersSub="Ekran pastidan o'yinchigacha chiziq",
+    nameEsp="Ism (Name ESP)", nameEspSub="Bosh ustida o'yinchi ismini ko'rsatadi",
+    healthTag="Health Tag", healthTagSub="Bosh ustida HP chizig'i + raqam",
+    rainbowEsp="Rainbow ESP", rainbowEspSub="ESP rangini aylantiradi",
+    espColor="ESP Rangi",
+    watermark="Watermark", watermarkSub="Yuqorida ism + FPS",
+    secSpeed="TEZLIK", speedHack="Speed Hack", speedHackSub="WalkSpeed oshiradi",
+    speedVal="Tezlik Qiymati",
+    secJump="SAKRASH", jumpHack="Jump Hack", jumpHackSub="JumpPower oshiradi",
+    jumpVal="Sakrash Qiymati", infJump="Infinite Jump", infJumpSub="Havoda qayta sakrash",
+    secMove="HARAKAT", noclip="Noclip", noclipSub="Devordan o'tish",
+    playerFov="Player FOV", playerFovSub="Kamera ko'rish burchagi",
+    secLight="YORITISH", fullBright="Full Bright", fullBrightSub="Maksimal ambient yorug'lik",
+    noShadow="No Shadow", noShadowSub="Soya renderingni o'chiradi",
+    secPerf="ISHLASH TEZLIGI", fastMode="Fast Mode",
+    fastModeSub="Faqat binolar texturasini o'chiradi — gun/car/player'ga tegmaydi",
+    antiAfk="Anti-AFK", antiAfkSub="AFK sababli kickdan saqlaydi",
+    secLangCol="TIL VA RANG", language="Til", accentColor="Accent Rang",
+    secKeybind="TUGMA", toggleKey="UI Ochish Tugmasi",
+    secConfig="CONFIG SLOTLAR", save="Saqlash", load="Yuklash",
+    welcome="Xush kelibsiz, ", toggleHint="UI ochish/yopish uchun", saved="Saqlandi", loaded="Yuklandi",
+    on="Yoqildi", off="O'chirildi",
+},
+}
+local function T(key) return (L[lang] and L[lang][key]) or (L.en[key]) or key end
+
+-- ══════════════════════════════════════════════════════
+--  RANG MATEMATIKASI
+-- ══════════════════════════════════════════════════════
+local function clamp255(v) return math.clamp(math.floor(v+0.5),0,255) end
+local function lighten(c,amt) return Color3.fromRGB(clamp255(c.R*255+amt),clamp255(c.G*255+amt),clamp255(c.B*255+amt)) end
+local function darken(c,amt) return lighten(c,-amt) end
+local function mix(c1,c2,t) return c1:Lerp(c2,t) end
+
+-- Default: Midnight Blue
+local function deriveTheme(accent,bg)
+    return {
+        bg=bg, sidebar=darken(bg,4), sideAct=lighten(bg,10),
+        panel=lighten(bg,6), panelHov=lighten(bg,12),
+        accent=accent, border=accent, borderDim=mix(accent,bg,0.55),
+        textPri=Color3.fromRGB(228,234,245), textSec=mix(accent,Color3.fromRGB(228,234,245),0.55),
+        textDim=mix(accent,bg,0.35), tOn=accent, tOff=lighten(bg,20),
+        track=darken(bg,2), green=Color3.fromRGB(60,220,120), red=Color3.fromRGB(220,70,60),
+    }
+end
+
+local C = deriveTheme(Color3.fromRGB(90,150,255), Color3.fromRGB(10,18,44)) -- Midnight Blue
+
+-- ══════════════════════════════════════════════════════
+--  KEY SYSTEM  (tepada til, pastda key input)
+-- ══════════════════════════════════════════════════════
+local VALID_KEY = "shokh"
+local keyPassed = false
+
+do
+    local ksg=Instance.new("ScreenGui"); ksg.Name="ShokhKey"
+    ksg.ResetOnSpawn=false; ksg.IgnoreGuiInset=true
+    ksg.ZIndexBehavior=Enum.ZIndexBehavior.Sibling; ksg.Parent=PGui
+
+    local bg=Instance.new("Frame"); bg.Size=UDim2.new(1,0,1,0)
+    bg.BackgroundColor3=Color3.fromRGB(4,6,12); bg.BackgroundTransparency=1
+    bg.BorderSizePixel=0; bg.Parent=ksg
+    TweenService:Create(bg,TweenInfo.new(0.35),{BackgroundTransparency=0.22}):Play()
+
+    local card=Instance.new("Frame"); card.Size=UDim2.new(0,380,0,360)
+    card.BackgroundColor3=C.bg; card.BackgroundTransparency=0.04
+    card.BorderSizePixel=0; card.Position=UDim2.new(0.5,-190,0.62,-180); card.Parent=ksg
+    local cc=Instance.new("UICorner"); cc.CornerRadius=UDim.new(0,14); cc.Parent=card
+    local cs=Instance.new("UIStroke"); cs.Color=C.accent; cs.Thickness=1.5; cs.Transparency=0.25; cs.Parent=card
+    local cardScale=Instance.new("UIScale"); cardScale.Scale=0.85; cardScale.Parent=card
+    TweenService:Create(card,TweenInfo.new(0.5,Enum.EasingStyle.Back,Enum.EasingDirection.Out),
+        {Position=UDim2.new(0.5,-190,0.5,-180)}):Play()
+    TweenService:Create(cardScale,TweenInfo.new(0.5,Enum.EasingStyle.Back,Enum.EasingDirection.Out),{Scale=1}):Play()
+
+    local function mkTL(txt,sz,col,bold,par)
+        local l=Instance.new("TextLabel"); l.BackgroundTransparency=1
+        l.Text=txt; l.TextSize=sz; l.Font=bold and Enum.Font.GothamBold or Enum.Font.Gotham
+        l.TextColor3=col; l.TextXAlignment=Enum.TextXAlignment.Center
+        l.Size=UDim2.new(1,0,0,sz+6); l.Parent=par; return l
+    end
+
+    -- Tepada: Choose Language
+    local langHdr=mkTL(T("chooseLang"),12,C.textSec,true,card)
+    langHdr.Position=UDim2.new(0,0,0,16)
+
+    local langRow=Instance.new("Frame"); langRow.Size=UDim2.new(1,-40,0,36)
+    langRow.Position=UDim2.new(0,20,0,38); langRow.BackgroundTransparency=1; langRow.Parent=card
+    local lrl=Instance.new("UIListLayout"); lrl.FillDirection=Enum.FillDirection.Horizontal
+    lrl.HorizontalAlignment=Enum.HorizontalAlignment.Center; lrl.Padding=UDim.new(0,8); lrl.Parent=langRow
+
+    local langBtns={}
+    local function refreshLangBtns()
+        for code,b in pairs(langBtns) do
+            local sel=(code==lang)
+            TweenService:Create(b,TweenInfo.new(0.15),{
+                BackgroundColor3 = sel and C.accent or C.sidebar,
+                BackgroundTransparency = sel and 0.1 or 0.4
+            }):Play()
+        end
+    end
+
+    local function refreshKeyTexts()
+        -- placeholder va tugma matnlarini joriy tilga yangilaydi
+    end
+
+    for _,code in ipairs({"en","ru","uz"}) do
+        local b=Instance.new("TextButton"); b.Size=UDim2.new(0,84,0,36)
+        b.BackgroundColor3=C.sidebar; b.BorderSizePixel=0
+        b.Text=code:upper(); b.TextSize=12; b.Font=Enum.Font.GothamBold
+        b.TextColor3=C.textPri; b.Parent=langRow
+        local bc=Instance.new("UICorner"); bc.CornerRadius=UDim.new(0,8); bc.Parent=b
+        langBtns[code]=b
+        b.MouseButton1Click:Connect(function()
+            lang=code
+            langHdr.Text=T("chooseLang")
+            refreshLangBtns()
+        end)
+    end
+    refreshLangBtns()
+
+    -- O'rtada: sarlavha
+    local ht1=mkTL("ShokhHacks",22,C.textPri,true,card)
+    ht1.Position=UDim2.new(0,0,0,96)
+    local ht2=mkTL("dev: Shokh",11,C.textDim,false,card)
+    ht2.Position=UDim2.new(0,0,0,124)
+
+    -- Pastda: Enter Key
+    local box=Instance.new("TextBox"); box.Size=UDim2.new(1,-40,0,42)
+    box.Position=UDim2.new(0,20,0,168); box.BackgroundColor3=C.sidebar
+    box.BorderSizePixel=0; box.Text=""; box.PlaceholderText=T("enterKey").."..."
+    box.PlaceholderColor3=C.textDim; box.TextSize=14
+    box.Font=Enum.Font.Gotham; box.TextColor3=C.textPri
+    box.TextXAlignment=Enum.TextXAlignment.Center; box.Parent=card
+    local bcc=Instance.new("UICorner"); bcc.CornerRadius=UDim.new(0,8); bcc.Parent=box
+    local bcs=Instance.new("UIStroke"); bcs.Color=C.border; bcs.Thickness=1.5; bcs.Parent=box
+
+    local errL=mkTL("",11,C.red,false,card)
+    errL.Position=UDim2.new(0,0,0,216)
+
+    local vBtn=Instance.new("TextButton"); vBtn.Size=UDim2.new(1,-40,0,42)
+    vBtn.Position=UDim2.new(0,20,0,238); vBtn.BackgroundColor3=C.accent
+    vBtn.BorderSizePixel=0; vBtn.Text=T("verify"); vBtn.TextSize=14
+    vBtn.Font=Enum.Font.GothamBold; vBtn.TextColor3=Color3.new(1,1,1); vBtn.Parent=card
+    local vcc=Instance.new("UICorner"); vcc.CornerRadius=UDim.new(0,9); vcc.Parent=vBtn
+
+    local dBtn=Instance.new("TextButton"); dBtn.Size=UDim2.new(1,-40,0,34)
+    dBtn.Position=UDim2.new(0,20,0,290); dBtn.BackgroundColor3=Color3.fromRGB(88,101,242)
+    dBtn.BackgroundTransparency=0.3; dBtn.BorderSizePixel=0; dBtn.Text="🔗  "..T("discord")
+    dBtn.TextSize=12; dBtn.Font=Enum.Font.GothamBold; dBtn.TextColor3=Color3.new(1,1,1)
+    dBtn.Parent=card; local dcc=Instance.new("UICorner"); dcc.CornerRadius=UDim.new(0,8); dcc.Parent=dBtn
+
+    box:GetPropertyChangedSignal("Text"):Connect(function() end)
+
+    -- Til o'zgarganda placeholder/tugma matnlarini yangilash
+    local function refreshTexts()
+        box.PlaceholderText=T("enterKey").."..."
+        vBtn.Text=T("verify")
+        dBtn.Text="🔗  "..T("discord")
+        langHdr.Text=T("chooseLang")
+    end
+    for code,b in pairs(langBtns) do
+        b.MouseButton1Click:Connect(refreshTexts)
+    end
+
+    task.spawn(function()
+        while vBtn.Parent do
+            TweenService:Create(vBtn,TweenInfo.new(1,Enum.EasingStyle.Sine,Enum.EasingDirection.InOut),{BackgroundTransparency=0.18}):Play()
+            task.wait(1)
+            if not vBtn.Parent then break end
+            TweenService:Create(vBtn,TweenInfo.new(1,Enum.EasingStyle.Sine,Enum.EasingDirection.InOut),{BackgroundTransparency=0}):Play()
+            task.wait(1)
+        end
+    end)
+
+    local attempts=0
+    local function verify()
+        attempts+=1
+        if box.Text:lower()==VALID_KEY then
+            errL.Text="✓ "..T("success"); errL.TextColor3=C.green
+            vBtn.BackgroundColor3=C.green
+            task.delay(0.7,function()
+                TweenService:Create(cardScale,TweenInfo.new(0.25,Enum.EasingStyle.Quad,Enum.EasingDirection.In),{Scale=0.85}):Play()
+                TweenService:Create(card,TweenInfo.new(0.25),{BackgroundTransparency=1}):Play()
+                TweenService:Create(bg,TweenInfo.new(0.3),{BackgroundTransparency=1}):Play()
+                task.delay(0.3,function() keyPassed=true; ksg:Destroy() end)
+            end)
+        else
+            errL.Text="✗ "..T("wrongKey").." ("..attempts..")"
+            TweenService:Create(box,TweenInfo.new(0.08),{BackgroundColor3=Color3.fromRGB(50,20,20)}):Play()
+            task.delay(1.1,function()
+                TweenService:Create(box,TweenInfo.new(0.2),{BackgroundColor3=C.sidebar}):Play()
+                errL.Text=""; box.Text=""
+            end)
+        end
+    end
+    vBtn.MouseButton1Click:Connect(verify)
+    box.FocusLost:Connect(function(e) if e then verify() end end)
+    dBtn.MouseButton1Click:Connect(function()
+        pcall(setclipboard,"https://discord.gg/vXJ6PJCTjY")
+    end)
+end
+repeat task.wait(0.05) until keyPassed
+
+-- ══════════════════════════════════════════════════════
+--  CONFIG
+-- ══════════════════════════════════════════════════════
+local DEFAULT={
+    -- Visuals / ESP
+    esp=false, teamCheck=false, boxEsp=false, tracers=false, nameEsp=false, healthTag=false,
+    rainbow=false, espR=90, espG=150, espB=255, watermark=true,
+    -- Movement
+    speedHack=false, speedValue=32, jumpHack=false, jumpValue=80,
+    infiniteJump=false, noclip=false, playerFov=70,
+    -- Effects
+    fullBright=false, noShadow=false, fastMode=false, antiAfk=false,
+    -- Settings
+    uiKey="RightShift", accentR=90, accentG=150, accentB=255, language="en",
+}
+local cfg={}
+for k,v in pairs(DEFAULT) do cfg[k]=v end
+lang = cfg.language
+
+local slotNames={"Config 1","Config 2","Config 3"}
+local function sPath(n) return "shokhhacks_v4_"..n..".json" end
+local function nPath() return "shokhhacks_v4_names.json" end
+
+local function saveSlot(n)
+    local a=pcall(writefile,sPath(n),HttpService:JSONEncode(cfg))
+    local b=pcall(writefile,nPath(),HttpService:JSONEncode(slotNames))
+    return a and b
+end
+local function loadSlot(n)
+    local ok,d=pcall(function()
+        if not isfile(sPath(n)) then return nil end
+        return HttpService:JSONDecode(readfile(sPath(n)))
+    end)
+    if ok and d and type(d)=="table" then
+        for k,v in pairs(d) do if cfg[k]~=nil then cfg[k]=v end end
+        return true
+    end
+    return false
+end
+pcall(function()
+    if isfile(nPath()) then
+        local d=HttpService:JSONDecode(readfile(nPath()))
+        for i=1,3 do if type(d[i])=="string" then slotNames[i]=d[i] end end
+    end
+end)
+
+-- ══════════════════════════════════════════════════════
+--  ESP — Highlight + Drawing (Box / Tracers / Name / Health)
+-- ══════════════════════════════════════════════════════
+local HL="ShokhHL"
+local function espCol() return Color3.fromRGB(cfg.espR,cfg.espG,cfg.espB) end
+local function getHL(c) return c:FindFirstChild(HL) end
+local function addHL(p,char)
+    if p==LP or getHL(char) then return end
+    local h=Instance.new("Highlight"); h.Name=HL; h.Adornee=char
+    h.DepthMode=Enum.HighlightDepthMode.AlwaysOnTop
+    h.FillColor=espCol(); h.OutlineColor=Color3.new(1,1,1)
+    h.FillTransparency=0.45; h.Parent=char
+end
+local function removeHL(char) local h=getHL(char); if h then h:Destroy() end end
+
+-- Drawing pool: har o'yinchi uchun tracer/box/name/health
+local dPool={}
+local function getPool(p)
+    if dPool[p] then return dPool[p] end
+    local ok,pool = pcall(function()
+        return {
+            tracer=Drawing.new("Line"),
+            box=Drawing.new("Square"),
+            nameText=Drawing.new("Text"),
+            hpBg=Drawing.new("Square"),
+            hpFill=Drawing.new("Square"),
+            hpText=Drawing.new("Text"),
+        }
+    end)
+    if not ok then return nil end
+    pool.tracer.Thickness=1.4
+    pool.box.Thickness=1.4; pool.box.Filled=false
+    pool.nameText.Center=true; pool.nameText.Size=14; pool.nameText.Outline=true
+    pool.hpBg.Filled=true
+    pool.hpFill.Filled=true
+    pool.hpText.Center=true; pool.hpText.Size=12; pool.hpText.Outline=true
+    dPool[p]=pool
+    return pool
+end
+local function hideDrawing(p)
+    local pool=dPool[p]; if not pool then return end
+    for _,d in pairs(pool) do pcall(function() d.Visible=false end) end
+end
+local function removeDrawing(p)
+    local pool=dPool[p]; if not pool then return end
+    for _,d in pairs(pool) do pcall(function() d:Remove() end) end
+    dPool[p]=nil
+end
+Players.PlayerRemoving:Connect(function(p)
+    if p.Character then removeHL(p.Character) end
+    removeDrawing(p)
+end)
+
+local function getScreenBox(char)
+    local ok,cf,size = pcall(function() return char:GetBoundingBox() end)
+    if not ok or not cf then return nil end
+    local minX,minY,maxX,maxY = math.huge,math.huge,-math.huge,-math.huge
+    local anyVisible=false
+    for _,mx in ipairs({-1,1}) do
+        for _,my in ipairs({-1,1}) do
+            for _,mz in ipairs({-1,1}) do
+                local corner = cf * CFrame.new(size.X/2*mx, size.Y/2*my, size.Z/2*mz)
+                local sp,vis = Camera:WorldToViewportPoint(corner.Position)
+                if vis then anyVisible=true end
+                minX=math.min(minX,sp.X); maxX=math.max(maxX,sp.X)
+                minY=math.min(minY,sp.Y); maxY=math.max(maxY,sp.Y)
+            end
+        end
+    end
+    if not anyVisible then return nil end
+    return minX,minY,(maxX-minX),(maxY-minY)
+end
+
+-- ══════════════════════════════════════════════════════
+--  MOVEMENT
+-- ══════════════════════════════════════════════════════
+local origWalk,origJump
+local function applySpeed(on)
+    local hum=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+    if on then origWalk=origWalk or hum.WalkSpeed; hum.WalkSpeed=cfg.speedValue
+    else if origWalk then hum.WalkSpeed=origWalk; origWalk=nil end end
+end
+local function applyJump(on)
+    local hum=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+    if on then origJump=origJump or hum.JumpPower; hum.JumpPower=cfg.jumpValue
+    else if origJump then hum.JumpPower=origJump; origJump=nil end end
+end
+local noclipConn
+local function applyNoclip(on)
+    if noclipConn then noclipConn:Disconnect(); noclipConn=nil end
+    if not on then
+        local c=LP.Character; if c then
+            for _,p in ipairs(c:GetDescendants()) do
+                if p:IsA("BasePart") then pcall(function() p.CanCollide=true end) end
+            end
+        end
+        return
+    end
+    noclipConn=RunService.Stepped:Connect(function()
+        local c=LP.Character; if not c then return end
+        for _,p in ipairs(c:GetDescendants()) do
+            if p:IsA("BasePart") then pcall(function() p.CanCollide=false end) end
+        end
+    end)
+end
+local ijConn
+local function applyInfJump(on)
+    if ijConn then ijConn:Disconnect(); ijConn=nil end
+    if not on then return end
+    ijConn=UserInputService.JumpRequest:Connect(function()
+        local c=LP.Character; if not c then return end
+        local hum=c:FindFirstChildOfClass("Humanoid"); if not hum then return end
+        hum:ChangeState(Enum.HumanoidStateType.Jumping)
+    end)
+end
+local function applyPlayerFov(v) pcall(function() Camera.FieldOfView=v end) end
+
+-- ══════════════════════════════════════════════════════
+--  EFFECTS
+-- ══════════════════════════════════════════════════════
+local oShadow,oSoft,oBright,oAmb,oOut,oFog
+local function applyNoShadow(on)
+    if on then
+        oShadow=Lighting.GlobalShadows; oSoft=Lighting.ShadowSoftness
+        Lighting.GlobalShadows=false; Lighting.ShadowSoftness=1
+    else
+        if oShadow~=nil then Lighting.GlobalShadows=oShadow end
+        if oSoft then Lighting.ShadowSoftness=oSoft end
+    end
+end
+local function applyFullBright(on)
+    if on then
+        oBright=Lighting.Brightness; oAmb=Lighting.Ambient
+        oOut=Lighting.OutdoorAmbient; oFog=Lighting.FogEnd
+        Lighting.Brightness=2; Lighting.Ambient=Color3.new(1,1,1)
+        Lighting.OutdoorAmbient=Color3.new(1,1,1); Lighting.FogEnd=1e5
+    else
+        if oBright then Lighting.Brightness=oBright end
+        if oAmb then Lighting.Ambient=oAmb end
+        if oOut then Lighting.OutdoorAmbient=oOut end
+        if oFog then Lighting.FogEnd=oFog end
+    end
+end
+
+-- Fast Mode — faqat bino/textura, gun/car/player HIMOYALANADI
+local function isProtected(inst)
+    local cur=inst
+    for _=1,8 do
+        if not cur or cur==workspace then break end
+        if cur:IsA("Tool") then return true end
+        if cur:IsA("Model") then
+            if cur:FindFirstChildOfClass("Humanoid") then return true end
+            if cur:FindFirstChildOfClass("VehicleSeat") then return true end
+            if cur:FindFirstChild("DriveSeat") then return true end
+        end
+        cur=cur.Parent
+    end
+    return false
+end
+local fmOrig={}
+local fmConn=nil
+local function stripTexture(inst)
+    if isProtected(inst) then return end
+    if inst:IsA("Decal") or inst:IsA("Texture") then
+        if fmOrig[inst]==nil then fmOrig[inst]=inst.Transparency end
+        pcall(function() inst.Transparency=1 end)
+    elseif inst:IsA("MeshPart") then
+        if inst.TextureID~="" and fmOrig[inst]==nil then
+            fmOrig[inst]=inst.TextureID
+            pcall(function() inst.TextureID="" end)
+        end
+    end
+end
+local function applyFastMode(on)
+    if fmConn then fmConn:Disconnect(); fmConn=nil end
+    if on then
+        for _,inst in ipairs(workspace:GetDescendants()) do pcall(stripTexture,inst) end
+        fmConn=workspace.DescendantAdded:Connect(function(inst)
+            if cfg.fastMode then task.defer(stripTexture,inst) end
+        end)
+    else
+        for inst,val in pairs(fmOrig) do
+            if inst and inst.Parent then
+                pcall(function()
+                    if inst:IsA("MeshPart") then inst.TextureID=val
+                    else inst.Transparency=val end
+                end)
+            end
+        end
+        fmOrig={}
+    end
+end
+
+-- Anti-AFK
+local afkConn
+local function applyAntiAfk(on)
+    if afkConn then afkConn:Disconnect(); afkConn=nil end
+    if not on then return end
+    afkConn=LP.Idled:Connect(function()
+        pcall(function()
+            VirtualUser:CaptureController()
+            VirtualUser:ClickButton2(Vector2.new())
+        end)
+    end)
+end
+
+-- ══════════════════════════════════════════════════════
+--  PLAYER LIFECYCLE
+-- ══════════════════════════════════════════════════════
+local function onPlayerAdded(p)
+    p.CharacterAdded:Connect(function(char)
+        task.wait(0.1)
+        if cfg.esp then addHL(p,char) end
+    end)
+end
+for _,p in ipairs(Players:GetPlayers()) do onPlayerAdded(p) end
+Players.PlayerAdded:Connect(onPlayerAdded)
+
+LP.CharacterAdded:Connect(function()
+    origWalk=nil; origJump=nil; task.wait(0.5)
+    if cfg.speedHack then applySpeed(true) end
+    if cfg.jumpHack then applyJump(true) end
+    if cfg.noclip then applyNoclip(true) end
+    applyPlayerFov(cfg.playerFov)
+end)
+
+local function applyAll()
+    for _,p in ipairs(Players:GetPlayers()) do
+        if p==LP then continue end
+        local c=p.Character; if not c then continue end
+        if cfg.esp then addHL(p,c) else removeHL(c) end
+    end
+    applyNoShadow(cfg.noShadow); applyFullBright(cfg.fullBright); applyFastMode(cfg.fastMode)
+    applySpeed(cfg.speedHack); applyJump(cfg.jumpHack)
+    applyNoclip(cfg.noclip); applyInfJump(cfg.infiniteJump)
+    applyAntiAfk(cfg.antiAfk); applyPlayerFov(cfg.playerFov)
+end
+
+-- ══════════════════════════════════════════════════════
+--  GUI HELPERS
+-- ══════════════════════════════════════════════════════
+local function mkC(r,p) local c=Instance.new("UICorner"); c.CornerRadius=UDim.new(0,r); c.Parent=p end
+local function mkP(t,b,l,r,p)
+    local u=Instance.new("UIPadding")
+    u.PaddingTop=UDim.new(0,t); u.PaddingBottom=UDim.new(0,b)
+    u.PaddingLeft=UDim.new(0,l); u.PaddingRight=UDim.new(0,r); u.Parent=p
+end
+local function mkSt(w,col,p) local s=Instance.new("UIStroke"); s.Thickness=w; s.Color=col; s.Parent=p; return s end
+local function mkF(bg,sz,pos,par)
+    local f=Instance.new("Frame"); f.BackgroundColor3=bg; f.BorderSizePixel=0
+    f.Size=sz or UDim2.new(1,0,1,0); f.Position=pos or UDim2.new(0,0,0,0); f.Parent=par; return f
+end
+local function mkTxt(txt,sz,col,bold,xa,par)
+    local l=Instance.new("TextLabel"); l.BackgroundTransparency=1
+    l.Text=txt; l.TextSize=sz; l.Font=bold and Enum.Font.GothamBold or Enum.Font.Gotham
+    l.TextColor3=col; l.TextXAlignment=xa or Enum.TextXAlignment.Left
+    l.Size=UDim2.new(1,0,0,sz+6); l.Parent=par; return l
+end
+local function tw(obj,t,g) TweenService:Create(obj,TweenInfo.new(t,Enum.EasingStyle.Quart,Enum.EasingDirection.Out),g):Play() end
+
+-- ── Notification (til-mustaqil, doim tirik) ───────────
+local notifGui=Instance.new("ScreenGui"); notifGui.Name="ShokhNotif"
+notifGui.ResetOnSpawn=false; notifGui.ZIndexBehavior=Enum.ZIndexBehavior.Sibling
+notifGui.IgnoreGuiInset=true; notifGui.Parent=PGui
+local notifStack={}
+local function notify(title,msg,ntype)
+    local col=ntype=="success" and C.green or ntype=="error" and C.red or C.accent
+    for _,n in ipairs(notifStack) do
+        local ny=n.Position.Y.Offset-68
+        tw(n,0.18,{Position=UDim2.new(1,-298,1,ny)})
+    end
+    local card=mkF(C.sidebar,UDim2.new(0,288,0,58),UDim2.new(1,10,1,-72),notifGui)
+    mkC(9,card); mkSt(1,col,card)
+    local bar=mkF(col,UDim2.new(0,3,1,-8),UDim2.new(0,0,0,4),card); mkC(2,bar)
+    local tl=mkTxt(title,12,C.textPri,true,nil,card)
+    tl.Position=UDim2.new(0,12,0,6); tl.Size=UDim2.new(1,-14,0,16)
+    local ml=mkTxt(msg,10,C.textSec,false,nil,card)
+    ml.Position=UDim2.new(0,12,0,24); ml.Size=UDim2.new(1,-14,0,26); ml.TextWrapped=true
+    table.insert(notifStack,card)
+    tw(card,0.25,{Position=UDim2.new(1,-298,1,-72)})
+    task.delay(2.5,function()
+        tw(card,0.25,{Position=UDim2.new(1,10,1,-72)})
+        task.delay(0.28,function()
+            local idx=table.find(notifStack,card)
+            if idx then table.remove(notifStack,idx) end
+            card:Destroy()
+        end)
+    end)
+end
+
+-- Persistent (rebuild bo'lmaydigan) elementlar
+local fovF -- Player FOV uchun emas, FOV circle kerak emas (Combat olib tashlandi) — shuning uchun ishlatilmaydi
+local wmF, wmL, rbBtn
+local currentKey = Enum.KeyCode.RightShift
+local guiOpen = true
+local toggleConn, dragConnB, dragConnE, dragConnC
+
+-- ══════════════════════════════════════════════════════
+--  buildGui()  — til o'zgarganda qayta chaqiriladi
+-- ══════════════════════════════════════════════════════
+local function buildGui()
+    if PGui:FindFirstChild("ShokhGui") then PGui.ShokhGui:Destroy() end
+    if toggleConn then toggleConn:Disconnect(); toggleConn=nil end
+    if dragConnB then dragConnB:Disconnect() end
+    if dragConnE then dragConnE:Disconnect() end
+    if dragConnC then dragConnC:Disconnect() end
+
+    local sg=Instance.new("ScreenGui"); sg.Name="ShokhGui"
+    sg.ResetOnSpawn=false; sg.ZIndexBehavior=Enum.ZIndexBehavior.Sibling
+    sg.IgnoreGuiInset=true; sg.Parent=PGui
+
+    -- Watermark
+    wmF=mkF(C.sidebar,UDim2.new(0,340,0,30),UDim2.new(1,-348,0,6),sg)
+    mkC(8,wmF); mkSt(1,C.border,wmF); wmF.Visible=cfg.watermark
+    wmL=mkTxt("ShokhHacks  |  "..LP.Name.."  |  FPS: --",11,C.textPri,true,nil,wmF)
+    wmL.Position=UDim2.new(0,10,0.5,-7); wmL.Size=UDim2.new(1,-12,0,16)
+
+    -- ── MAIN WINDOW ───────────────────────────────────
+    local WW,WH=900,560
+    local win=mkF(C.bg,UDim2.new(0,WW,0,WH),UDim2.new(0.5,-WW/2,0.5,-WH/2+20),sg)
+    mkC(10,win); local winStroke=mkSt(1,C.border,win)
+    local winScale=Instance.new("UIScale"); winScale.Scale=0.82; winScale.Parent=win
+    win.BackgroundTransparency=1; win.Visible=false
+
+    Instance.new("UIGradient",win).Color=ColorSequence.new{
+        ColorSequenceKeypoint.new(0,lighten(C.bg,6)),
+        ColorSequenceKeypoint.new(1,darken(C.bg,4))
+    }
+
+    local shadowF=mkF(Color3.new(),UDim2.new(1,28,1,28),UDim2.new(0,-14,0,-14),sg)
+    shadowF.BackgroundTransparency=0.65; shadowF.ZIndex=win.ZIndex-1
+    mkC(14,shadowF); shadowF.Visible=false
+
+    task.defer(function()
+        win.Visible=true; shadowF.Visible=true
+        tw(win,0.4,{BackgroundTransparency=0})
+        tw(winScale,0.4,{Scale=1})
+    end)
+
+    local TH=38
+    local titleBar=mkF(darken(C.bg,6),UDim2.new(1,0,0,TH),UDim2.new(0,0,0,0),win)
+    mkC(10,titleBar); mkP(0,0,14,14,titleBar)
+    mkF(darken(C.bg,6),UDim2.new(1,0,0,10),UDim2.new(0,0,1,-10),titleBar)
+
+    local titL=mkTxt("ShokhHacks",13,C.textPri,true,nil,titleBar)
+    titL.Position=UDim2.new(0,0,0.5,-8); titL.Size=UDim2.new(0,114,0,18)
+    local devL=mkTxt("dev: Shokh",10,C.textDim,false,nil,titleBar)
+    devL.Position=UDim2.new(0,114,0.5,-6); devL.Size=UDim2.new(0,80,0,14)
+
+    local function mkWinBtn(txt,xOff,bgcol,onClick)
+        local btn=Instance.new("TextButton"); btn.Size=UDim2.new(0,22,0,22)
+        btn.Position=UDim2.new(1,xOff,0.5,-11); btn.BackgroundColor3=bgcol
+        btn.BackgroundTransparency=0.5; btn.BorderSizePixel=0
+        btn.Text=txt; btn.TextSize=11; btn.Font=Enum.Font.GothamBold
+        btn.TextColor3=C.textPri; btn.Parent=titleBar; mkC(11,btn)
+        btn.MouseEnter:Connect(function() tw(btn,0.1,{BackgroundTransparency=0.1}) end)
+        btn.MouseLeave:Connect(function() tw(btn,0.1,{BackgroundTransparency=0.5}) end)
+        btn.MouseButton1Click:Connect(onClick)
+    end
+    mkWinBtn("─",-40,Color3.fromRGB(80,80,80),function()
+        tw(win,0.2,{Position=UDim2.new(0.5,-WW/2,1.2,-WH/2),BackgroundTransparency=0.1})
+        task.delay(0.22,function() win.Visible=false; shadowF.Visible=false end)
+    end)
+    mkWinBtn("✕",-10,Color3.fromRGB(180,50,50),function()
+        tw(win,0.2,{BackgroundTransparency=0.12,Position=UDim2.new(0.5,-WW/2,0.5,-WH/2+18)})
+        task.delay(0.22,function() win.Visible=false; shadowF.Visible=false end)
+    end)
+
+    local body=mkF(C.bg,UDim2.new(1,0,1,-TH),UDim2.new(0,0,0,TH),win); body.BackgroundTransparency=1
+
+    -- ── Sidebar ───────────────────────────────────────
+    local SW=240
+    local sidebar=mkF(C.sidebar,UDim2.new(0,SW,1,0),UDim2.new(0,0,0,0),body)
+    mkSt(1,C.borderDim,sidebar)
+
+    local userCard=mkF(lighten(C.sidebar,6),UDim2.new(1,-14,0,72),UDim2.new(0,7,0,7),sidebar)
+    mkC(10,userCard); mkSt(1,C.border,userCard)
+    local avF=mkF(C.accent,UDim2.new(0,44,0,44),UDim2.new(0,10,0.5,-22),userCard)
+    mkC(22,avF); avF.BackgroundTransparency=0.4
+    local avL=mkTxt(LP.Name:sub(1,2):upper(),14,Color3.new(1,1,1),true,Enum.TextXAlignment.Center,avF)
+    avL.Size=UDim2.new(1,0,1,0)
+    local nmL=mkTxt(LP.Name,13,C.textPri,true,nil,userCard)
+    nmL.Position=UDim2.new(0,62,0,10); nmL.Size=UDim2.new(1,-70,0,18)
+    local rlL=mkTxt("ShokhHacks User",10,C.textSec,false,nil,userCard)
+    rlL.Position=UDim2.new(0,62,0,30); rlL.Size=UDim2.new(1,-70,0,14)
+    local idL=mkTxt("ID: "..tostring(LP.UserId),9,C.textDim,false,nil,userCard)
+    idL.Position=UDim2.new(0,62,0,46); idL.Size=UDim2.new(1,-70,0,14)
+
+    local srchBox=Instance.new("TextBox"); srchBox.Size=UDim2.new(1,-14,0,32)
+    srchBox.Position=UDim2.new(0,7,0,86); srchBox.BackgroundColor3=darken(C.sidebar,4)
+    srchBox.BorderSizePixel=0; srchBox.Text=""; srchBox.PlaceholderText="🔍  Search..."
+    srchBox.PlaceholderColor3=C.textDim; srchBox.TextSize=11
+    srchBox.Font=Enum.Font.Gotham; srchBox.TextColor3=C.textPri
+    srchBox.TextXAlignment=Enum.TextXAlignment.Left; srchBox.ClearTextOnFocus=false
+    srchBox.Parent=sidebar; mkC(8,srchBox); mkSt(1,C.border,srchBox); mkP(0,0,12,0,srchBox)
+
+    local navList=mkF(Color3.new(),UDim2.new(1,0,1,-126),UDim2.new(0,0,0,124),sidebar)
+    navList.BackgroundTransparency=1
+    local navLL=Instance.new("UIListLayout"); navLL.SortOrder=Enum.SortOrder.LayoutOrder
+    navLL.Padding=UDim.new(0,2); navLL.Parent=navList; mkP(4,4,6,6,navList)
+
+    local pageArea=mkF(Color3.new(),UDim2.new(1,-SW,1,0),UDim2.new(0,SW,0,0),body)
+    pageArea.BackgroundTransparency=1
+
+    -- ══════════════════════════════════════════════════
+    --  WIDGET FACTORIES (buildGui ichida — C/lang joriy)
+    -- ══════════════════════════════════════════════════
+    local tabs,tabFrames={},{}
+    local activeTab=nil
+    local allRows={}
+
+    local function mkTab(name,icon,order)
+        local btn=Instance.new("TextButton"); btn.Size=UDim2.new(1,0,0,40)
+        btn.BackgroundColor3=C.sidebar; btn.BorderSizePixel=0; btn.LayoutOrder=order
+        btn.Text=""; btn.Parent=navList; mkC(8,btn)
+        local acBar=mkF(C.accent,UDim2.new(0,3,0.65,0),UDim2.new(0,0,0.17,0),btn)
+        mkC(2,acBar); acBar.Visible=false
+        local iconL=mkTxt(icon,14,C.textSec,false,nil,btn)
+        iconL.Position=UDim2.new(0,10,0.5,-9); iconL.Size=UDim2.new(0,22,0,20)
+        local nameL=mkTxt(name,12,C.textSec,true,nil,btn)
+        nameL.Position=UDim2.new(0,36,0.5,-8); nameL.Size=UDim2.new(1,-44,0,18)
+
+        btn.MouseEnter:Connect(function() if activeTab~=name then tw(btn,0.1,{BackgroundColor3=C.sideAct}) end end)
+        btn.MouseLeave:Connect(function() if activeTab~=name then tw(btn,0.1,{BackgroundColor3=C.sidebar}) end end)
+
+        local pg=mkF(Color3.new(),UDim2.new(1,0,1,0),UDim2.new(0,0,0,0),pageArea)
+        pg.BackgroundTransparency=1; pg.Visible=false
+
+        local pgTitle=mkTxt(name,26,C.textPri,true,nil,pg)
+        pgTitle.Position=UDim2.new(0,20,0,12); pgTitle.Size=UDim2.new(1,-40,0,34)
+        local sep=mkF(C.borderDim,UDim2.new(1,-40,0,1),UDim2.new(0,20,0,50),pg); sep.BackgroundTransparency=0.3
+
+        local sc=Instance.new("ScrollingFrame"); sc.Size=UDim2.new(1,0,1,-58)
+        sc.Position=UDim2.new(0,0,0,58); sc.BackgroundTransparency=1
+        sc.BorderSizePixel=0; sc.ScrollBarThickness=3
+        sc.ScrollBarImageColor3=C.accent; sc.ScrollBarImageTransparency=0.4
+        sc.CanvasSize=UDim2.new(0,0,0,0); sc.AutomaticCanvasSize=Enum.AutomaticSize.Y
+        sc.Parent=pg; mkP(4,8,18,18,sc)
+        local ll=Instance.new("UIListLayout"); ll.SortOrder=Enum.SortOrder.LayoutOrder
+        ll.Padding=UDim.new(0,4); ll.Parent=sc
+
+        tabs[name]=btn; tabFrames[name]={frame=pg,scroll=sc,acBar=acBar,nameL=nameL,iconL=iconL}
+        btn.MouseButton1Click:Connect(function()
+            if activeTab==name then return end
+            for n,tf in pairs(tabFrames) do
+                tf.frame.Visible=false; tf.acBar.Visible=false
+                tw(tabs[n],0.12,{BackgroundColor3=C.sidebar})
+                tf.nameL.TextColor3=C.textSec; tf.iconL.TextColor3=C.textSec
+            end
+            pg.Visible=true; acBar.Visible=true
+            tw(btn,0.12,{BackgroundColor3=C.sideAct})
+            nameL.TextColor3=C.textPri; iconL.TextColor3=C.accent
+            activeTab=name
+        end)
+        return sc
+    end
+
+    local function mkRow(par,h,order)
+        local r=mkF(C.panel,UDim2.new(1,0,0,h or 52),nil,par)
+        r.LayoutOrder=order or 0; mkC(6,r); mkSt(1,C.borderDim,r); mkP(0,0,14,14,r)
+        r.MouseEnter:Connect(function() tw(r,0.1,{BackgroundColor3=C.panelHov}) end)
+        r.MouseLeave:Connect(function() tw(r,0.1,{BackgroundColor3=C.panel}) end)
+        return r
+    end
+
+    local function mkSec(par,txt,order)
+        local l=mkTxt(txt,12,C.textPri,true,nil,par)
+        l.Position=UDim2.new(0,2,0,0); l.Size=UDim2.new(1,0,0,18); l.LayoutOrder=order or 0
+    end
+
+    local function mkToggle(par,name,sub,init,order,onChange)
+        local row=mkRow(par,52,order)
+        table.insert(allRows,{row=row,name=name})
+        local nl=mkTxt(name,13,C.textPri,true,nil,row)
+        nl.Position=UDim2.new(0,0,0,7); nl.Size=UDim2.new(0.76,0,0,18)
+        if sub then
+            local sl=mkTxt(sub,10,C.textSec,false,nil,row)
+            sl.Position=UDim2.new(0,0,0,27); sl.Size=UDim2.new(0.76,0,0,14)
+        end
+        local pill=Instance.new("TextButton"); pill.Size=UDim2.new(0,46,0,26)
+        pill.Position=UDim2.new(1,-50,0.5,-13); pill.BorderSizePixel=0; pill.Text=""
+        pill.Parent=row; mkC(13,pill)
+        local knob=mkF(Color3.new(1,1,1),UDim2.new(0,20,0,20),UDim2.new(0,3,0.5,-10),pill); mkC(10,knob)
+        local v=init
+        local function refresh(val)
+            tw(pill,0.15,{BackgroundColor3=val and C.tOn or C.tOff})
+            tw(knob,0.15,{Position=val and UDim2.new(1,-23,0.5,-10) or UDim2.new(0,3,0.5,-10)})
+        end
+        refresh(v)
+        pill.MouseButton1Click:Connect(function() v=not v; refresh(v); onChange(v) end)
+        return function(nv) v=nv; refresh(v) end
+    end
+
+    local function mkSlider(par,name,sub,mn,mx,init,order,onChange)
+        local row=mkRow(par,66,order)
+        table.insert(allRows,{row=row,name=name})
+        local nl=mkTxt(name,13,C.textPri,true,nil,row)
+        nl.Position=UDim2.new(0,0,0,6); nl.Size=UDim2.new(0.62,0,0,18)
+        local vl=Instance.new("TextLabel"); vl.BackgroundTransparency=1
+        vl.TextSize=12; vl.Font=Enum.Font.GothamBold; vl.TextColor3=C.accent
+        vl.TextXAlignment=Enum.TextXAlignment.Right
+        vl.Size=UDim2.new(0.38,0,0,18); vl.Position=UDim2.new(0.62,0,0,6); vl.Parent=row
+        if sub then
+            local sl=mkTxt(sub,10,C.textSec,false,nil,row)
+            sl.Position=UDim2.new(0,0,0,26); sl.Size=UDim2.new(0.7,0,0,13)
+        end
+        local track=mkF(C.track,UDim2.new(1,0,0,5),UDim2.new(0,0,1,-13),row); mkC(3,track)
+        local fill=mkF(C.accent,UDim2.new(0,0,1,0),UDim2.new(0,0,0,0),track); mkC(3,fill)
+        local knob=mkF(Color3.new(1,1,1),UDim2.new(0,13,0,13),UDim2.new(1,-6,0.5,-6),fill)
+        mkC(7,knob); mkSt(2,C.accent,knob)
+        local dragging=false
+        local function setV(nv)
+            nv=math.clamp(math.floor(nv+0.5),mn,mx)
+            local pct=(nv-mn)/(mx-mn); fill.Size=UDim2.new(pct,0,1,0)
+            vl.Text=tostring(nv); onChange(nv)
+        end
+        setV(init)
+        track.InputBegan:Connect(function(i)
+            if i.UserInputType==Enum.UserInputType.MouseButton1 then
+                dragging=true
+                setV(mn+math.clamp((i.Position.X-track.AbsolutePosition.X)/track.AbsoluteSize.X,0,1)*(mx-mn))
+            end
+        end)
+        track.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then dragging=false end end)
+        knob.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then dragging=true end end)
+        UserInputService.InputChanged:Connect(function(i)
+            if dragging and i.UserInputType==Enum.UserInputType.MouseMovement then
+                setV(mn+math.clamp((i.Position.X-track.AbsolutePosition.X)/track.AbsoluteSize.X,0,1)*(mx-mn))
+            end
+        end)
+        return setV
+    end
+
+    local function mkDropdown(par,name,opts,init,order,onChange)
+        local row=mkRow(par,52,order)
+        table.insert(allRows,{row=row,name=name})
+        local nl=mkTxt(name,13,C.textPri,true,nil,row)
+        nl.Position=UDim2.new(0,0,0.5,-9); nl.Size=UDim2.new(0.5,0,0,18)
+        local db=Instance.new("TextButton"); db.Size=UDim2.new(0,128,0,28)
+        db.Position=UDim2.new(1,-138,0.5,-14); db.BackgroundColor3=C.track; db.BorderSizePixel=0
+        db.Text=init.."  ▾"; db.TextSize=11; db.Font=Enum.Font.GothamBold
+        db.TextColor3=C.textPri; db.Parent=row; mkC(6,db); mkSt(1,C.border,db)
+        local dl=mkF(C.sidebar,UDim2.new(0,128,0,#opts*30+6),UDim2.new(1,-138,1,4),row)
+        dl.ZIndex=30; dl.Visible=false; mkC(6,dl); mkSt(1,C.border,dl); mkP(3,3,4,4,dl)
+        local dll=Instance.new("UIListLayout"); dll.SortOrder=Enum.SortOrder.LayoutOrder
+        dll.Padding=UDim.new(0,2); dll.Parent=dl
+        for i,opt in ipairs(opts) do
+            local ob=Instance.new("TextButton"); ob.Size=UDim2.new(1,0,0,26)
+            ob.BackgroundColor3=C.sidebar; ob.BorderSizePixel=0; ob.Text=opt
+            ob.TextSize=11; ob.Font=Enum.Font.GothamBold; ob.TextColor3=C.textPri
+            ob.LayoutOrder=i; ob.Parent=dl; mkC(5,ob)
+            ob.MouseEnter:Connect(function() tw(ob,0.08,{BackgroundColor3=C.panelHov}) end)
+            ob.MouseLeave:Connect(function() tw(ob,0.08,{BackgroundColor3=C.sidebar}) end)
+            ob.MouseButton1Click:Connect(function() db.Text=opt.."  ▾"; dl.Visible=false; onChange(opt) end)
+        end
+        db.MouseButton1Click:Connect(function()
+            dl.Visible=not dl.Visible
+            tw(db,0.1,{BackgroundColor3=dl.Visible and C.panelHov or C.track})
+        end)
+        return function(v) db.Text=v.."  ▾" end
+    end
+
+    local function mkColorPicker(par,name,iR,iG,iB,order,onChange)
+        local row=mkRow(par,114,order)
+        table.insert(allRows,{row=row,name=name})
+        local nl=mkTxt(name,13,C.textPri,true,nil,row)
+        nl.Position=UDim2.new(0,0,0,5); nl.Size=UDim2.new(0.65,0,0,18)
+        local sw=mkF(Color3.fromRGB(iR,iG,iB),UDim2.new(0,42,0,30),UDim2.new(1,-46,0,4),row)
+        mkC(8,sw); mkSt(1,C.border,sw)
+        local r,g,b=iR,iG,iB
+        local function refSwVisual() sw.BackgroundColor3=Color3.fromRGB(r,g,b) end
+        local function refSw() refSwVisual(); onChange(r,g,b) end
+        local sR,sG,sB
+        local function miniBar(lt,col,yO,iv,onCh)
+            local bg=mkF(C.track,UDim2.new(1,0,0,6),UDim2.new(0,0,0,yO),row); mkC(3,bg)
+            local ltt=Instance.new("TextLabel"); ltt.BackgroundTransparency=1; ltt.Text=lt
+            ltt.TextSize=9; ltt.Font=Enum.Font.GothamBold; ltt.TextColor3=col
+            ltt.TextXAlignment=Enum.TextXAlignment.Left
+            ltt.Size=UDim2.new(0,8,0,9); ltt.Position=UDim2.new(0,-11,0,yO-2); ltt.Parent=row
+            local ff=mkF(col,UDim2.new(iv/255,0,1,0),UDim2.new(0,0,0,0),bg)
+            ff.BackgroundTransparency=0.3; mkC(3,ff)
+            local kn=mkF(Color3.fromRGB(220,255,250),UDim2.new(0,11,0,11),UDim2.new(1,-5,0.5,-5),ff); mkC(6,kn)
+            local dr=false
+            local function sv(nv)
+                nv=math.clamp(math.floor(nv+0.5),0,255)
+                ff.Size=UDim2.new(nv/255,0,1,0); onCh(nv); refSw()
+            end
+            bg.InputBegan:Connect(function(i)
+                if i.UserInputType==Enum.UserInputType.MouseButton1 then
+                    dr=true; sv(math.clamp((i.Position.X-bg.AbsolutePosition.X)/bg.AbsoluteSize.X,0,1)*255)
+                end
+            end)
+            bg.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then dr=false end end)
+            kn.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then dr=true end end)
+            UserInputService.InputChanged:Connect(function(i)
+                if dr and i.UserInputType==Enum.UserInputType.MouseMovement then
+                    sv(math.clamp((i.Position.X-bg.AbsolutePosition.X)/bg.AbsoluteSize.X,0,1)*255)
+                end
+            end)
+            return function(v) ff.Size=UDim2.new(v/255,0,1,0) end
+        end
+        sR=miniBar("R",Color3.fromRGB(255,80,80), 32,iR,function(v) r=v end)
+        sG=miniBar("G",Color3.fromRGB(60,210,90), 56,iG,function(v) g=v end)
+        sB=miniBar("B",Color3.fromRGB(80,142,255),80,iB,function(v) b=v end)
+        return function(rv,gv,bv) r=rv;g=gv;b=bv;sR(rv);sG(gv);sB(bv);refSwVisual() end
+    end
+
+    local function mkKeybind(par,name,init,order,onChanged)
+        local row=mkRow(par,52,order)
+        local nl=mkTxt(name,13,C.textPri,true,nil,row)
+        nl.Position=UDim2.new(0,0,0.5,-9); nl.Size=UDim2.new(0.5,0,0,18)
+        local kb=Instance.new("TextButton"); kb.Size=UDim2.new(0,118,0,28)
+        kb.Position=UDim2.new(1,-128,0.5,-14); kb.BackgroundColor3=C.track; kb.BorderSizePixel=0
+        kb.Text=init; kb.TextSize=11; kb.Font=Enum.Font.GothamBold; kb.TextColor3=C.textPri
+        kb.Parent=row; mkC(7,kb); mkSt(1,C.border,kb)
+        local listening=false
+        kb.MouseButton1Click:Connect(function()
+            if listening then return end; listening=true
+            kb.Text="[ ... ]"; tw(kb,0.12,{BackgroundColor3=lighten(C.track,20)})
+            local c; c=UserInputService.InputBegan:Connect(function(i,gp)
+                if gp then return end
+                local kname=i.UserInputType==Enum.UserInputType.Keyboard and i.KeyCode.Name
+                    or (tostring(i.UserInputType):match("Enum.UserInputType%.(.+)") or "?")
+                kb.Text=kname; tw(kb,0.15,{BackgroundColor3=C.track})
+                listening=false; c:Disconnect(); onChanged(kname,i.KeyCode,i.UserInputType)
+            end)
+        end)
+        return function(v) kb.Text=v end
+    end
+
+    srchBox:GetPropertyChangedSignal("Text"):Connect(function()
+        local q=srchBox.Text:lower()
+        for _,entry in ipairs(allRows) do
+            entry.row.Visible = (q=="") or entry.name:lower():find(q,1,true)~=nil
+        end
+    end)
+
+    -- ══════════════════════════════════════════════════
+    --  VISUALS TAB
+    -- ══════════════════════════════════════════════════
+    local visSc=mkTab(T("tabVisuals"),"👁",1)
+    mkSec(visSc,T("secEsp"),1)
+
+    do
+        local rbRow=mkRow(visSc,52,2)
+        local rl=mkTxt(T("rainbowEsp"),13,C.textPri,true,nil,rbRow)
+        rl.Position=UDim2.new(0,0,0.5,-8); rl.Size=UDim2.new(0.6,0,0,18)
+        local rs=mkTxt(T("rainbowEspSub"),10,C.textSec,false,nil,rbRow)
+        rs.Position=UDim2.new(0,0,0.5,6); rs.Size=UDim2.new(0.6,0,0,14)
+        rbBtn=Instance.new("TextButton"); rbBtn.Size=UDim2.new(0,96,0,28)
+        rbBtn.Position=UDim2.new(1,-100,0.5,-14); rbBtn.BackgroundColor3=C.red
+        rbBtn.BorderSizePixel=0; rbBtn.Text=cfg.rainbow and "● ON" or T("rainbowEsp")
+        rbBtn.TextSize=11; rbBtn.Font=Enum.Font.GothamBold
+        rbBtn.TextColor3=Color3.new(1,1,1); rbBtn.Parent=rbRow; mkC(6,rbBtn)
+        rbBtn.MouseButton1Click:Connect(function()
+            cfg.rainbow=not cfg.rainbow
+            rbBtn.Text=cfg.rainbow and "● ON" or T("rainbowEsp")
+            notify(T("rainbowEsp"),cfg.rainbow and T("on") or T("off"),cfg.rainbow and "success" or "error")
+        end)
+    end
+
+    local syncEsp=mkToggle(visSc,T("espMain"),T("espMainSub"),cfg.esp,3,function(v)
+        cfg.esp=v
+        for _,p in ipairs(Players:GetPlayers()) do
+            if p==LP then continue end
+            local c=p.Character; if not c then continue end
+            if v then addHL(p,c) else removeHL(c) end
+        end
+        notify(T("espMain"),v and T("on") or T("off"),v and "success" or "error")
+    end)
+    local syncEspCol=mkColorPicker(visSc,T("espColor"),cfg.espR,cfg.espG,cfg.espB,4,function(r,g,b)
+        cfg.espR=r; cfg.espG=g; cfg.espB=b
+        local col=espCol()
+        for _,p in ipairs(Players:GetPlayers()) do
+            if p==LP then continue end
+            local c=p.Character; if not c then continue end
+            local h=getHL(c); if h then h.FillColor=col end
+        end
+    end)
+    local syncTeamCheck=mkToggle(visSc,T("teamCheck"),T("teamCheckSub"),cfg.teamCheck,5,function(v)
+        cfg.teamCheck=v; notify(T("teamCheck"),v and T("on") or T("off"),v and "success" or "error")
+    end)
+    local syncBoxEsp=mkToggle(visSc,T("boxEsp"),T("boxEspSub"),cfg.boxEsp,6,function(v)
+        cfg.boxEsp=v; notify(T("boxEsp"),v and T("on") or T("off"),v and "success" or "error")
+    end)
+    local syncTracers=mkToggle(visSc,T("tracers"),T("tracersSub"),cfg.tracers,7,function(v)
+        cfg.tracers=v; notify(T("tracers"),v and T("on") or T("off"),v and "success" or "error")
+    end)
+    local syncNameEsp=mkToggle(visSc,T("nameEsp"),T("nameEspSub"),cfg.nameEsp,8,function(v)
+        cfg.nameEsp=v; notify(T("nameEsp"),v and T("on") or T("off"),v and "success" or "error")
+    end)
+    local syncHealthTag=mkToggle(visSc,T("healthTag"),T("healthTagSub"),cfg.healthTag,9,function(v)
+        cfg.healthTag=v; notify(T("healthTag"),v and T("on") or T("off"),v and "success" or "error")
+    end)
+
+    mkSec(visSc,T("secInfo"),20)
+    local syncWm=mkToggle(visSc,T("watermark"),T("watermarkSub"),cfg.watermark,21,function(v)
+        cfg.watermark=v; wmF.Visible=v
+    end)
+
+    -- ══════════════════════════════════════════════════
+    --  MOVEMENT TAB
+    -- ══════════════════════════════════════════════════
+    local movSc=mkTab(T("tabMovement"),"🏃",2)
+    mkSec(movSc,T("secSpeed"),1)
+    local syncSpeed=mkToggle(movSc,T("speedHack"),T("speedHackSub"),cfg.speedHack,2,function(v)
+        cfg.speedHack=v; applySpeed(v); notify(T("speedHack"),v and T("on") or T("off"),v and "success" or "error")
+    end)
+    local syncSpeedVal=mkSlider(movSc,T("speedVal"),"16 = normal",8,200,cfg.speedValue,3,function(v)
+        cfg.speedValue=v; if cfg.speedHack then applySpeed(true) end
+    end)
+    mkSec(movSc,T("secJump"),10)
+    local syncJump=mkToggle(movSc,T("jumpHack"),T("jumpHackSub"),cfg.jumpHack,11,function(v)
+        cfg.jumpHack=v; applyJump(v); notify(T("jumpHack"),v and T("on") or T("off"),v and "success" or "error")
+    end)
+    local syncJumpVal=mkSlider(movSc,T("jumpVal"),"50 = normal",20,300,cfg.jumpValue,12,function(v)
+        cfg.jumpValue=v; if cfg.jumpHack then applyJump(true) end
+    end)
+    local syncInfJump=mkToggle(movSc,T("infJump"),T("infJumpSub"),cfg.infiniteJump,13,function(v)
+        cfg.infiniteJump=v; applyInfJump(v); notify(T("infJump"),v and T("on") or T("off"),v and "success" or "error")
+    end)
+    mkSec(movSc,T("secMove"),20)
+    local syncNoclip=mkToggle(movSc,T("noclip"),T("noclipSub"),cfg.noclip,21,function(v)
+        cfg.noclip=v; applyNoclip(v); notify(T("noclip"),v and T("on") or T("off"),v and "success" or "error")
+    end)
+    local syncPlayerFov=mkSlider(movSc,T("playerFov"),T("playerFovSub"),30,120,cfg.playerFov,22,function(v)
+        cfg.playerFov=v; applyPlayerFov(v)
+    end)
+
+    -- ══════════════════════════════════════════════════
+    --  EFFECTS TAB
+    -- ══════════════════════════════════════════════════
+    local fxSc=mkTab(T("tabEffects"),"✨",3)
+    mkSec(fxSc,T("secLight"),1)
+    local syncFullBright=mkToggle(fxSc,T("fullBright"),T("fullBrightSub"),cfg.fullBright,2,function(v)
+        cfg.fullBright=v; applyFullBright(v); notify(T("fullBright"),v and T("on") or T("off"),v and "success" or "error")
+    end)
+    local syncNoShadow=mkToggle(fxSc,T("noShadow"),T("noShadowSub"),cfg.noShadow,3,function(v)
+        cfg.noShadow=v; applyNoShadow(v); notify(T("noShadow"),v and T("on") or T("off"),v and "success" or "error")
+    end)
+    mkSec(fxSc,T("secPerf"),10)
+    local syncFastMode=mkToggle(fxSc,T("fastMode"),T("fastModeSub"),cfg.fastMode,11,function(v)
+        cfg.fastMode=v; applyFastMode(v); notify(T("fastMode"),v and T("on") or T("off"),v and "success" or "error")
+    end)
+    local syncAntiAfk=mkToggle(fxSc,T("antiAfk"),T("antiAfkSub"),cfg.antiAfk,12,function(v)
+        cfg.antiAfk=v; applyAntiAfk(v); notify(T("antiAfk"),v and T("on") or T("off"),v and "success" or "error")
+    end)
+
+    -- ══════════════════════════════════════════════════
+    --  SETTINGS TAB
+    -- ══════════════════════════════════════════════════
+    local settSc=mkTab(T("tabSettings"),"⚙",4)
+    mkSec(settSc,T("secLangCol"),1)
+
+    local syncLang=mkDropdown(settSc,T("language"),{"EN","RU","UZ"},lang:upper(),2,function(v)
+        local newLang=v:lower()
+        if newLang==lang then return end
+        lang=newLang; cfg.language=newLang
+        buildGui()
+    end)
+    local syncAllUIRef
+    local syncAccent=mkColorPicker(settSc,T("accentColor"),cfg.accentR,cfg.accentG,cfg.accentB,3,function(r,g,b)
+        cfg.accentR=r; cfg.accentG=g; cfg.accentB=b
+        C.accent=Color3.fromRGB(r,g,b); C.tOn=C.accent; C.border=C.accent
+        winStroke.Color=C.accent
+        avF.BackgroundColor3=C.accent
+        -- Barcha toggle/slider/dropdownlarni yangi accent bilan qayta chizadi
+        task.defer(function() if syncAllUIRef then syncAllUIRef() end end)
+    end)
+
+    mkSec(settSc,T("secKeybind"),10)
+    local syncKey=mkKeybind(settSc,T("toggleKey"),cfg.uiKey,11,function(kn,kc)
+        cfg.uiKey=kn; currentKey=kc; notify(T("toggleKey"),"→ "..kn,"success")
+    end)
+
+    mkSec(settSc,T("secConfig"),20)
+    local slotNameSyncs={}
+
+    local function syncAllUI()
+        syncEsp(cfg.esp); syncEspCol(cfg.espR,cfg.espG,cfg.espB)
+        rbBtn.Text=cfg.rainbow and "● ON" or T("rainbowEsp")
+        syncTeamCheck(cfg.teamCheck); syncBoxEsp(cfg.boxEsp); syncTracers(cfg.tracers)
+        syncNameEsp(cfg.nameEsp); syncHealthTag(cfg.healthTag); syncWm(cfg.watermark)
+        syncSpeed(cfg.speedHack); syncSpeedVal(cfg.speedValue)
+        syncJump(cfg.jumpHack); syncJumpVal(cfg.jumpValue)
+        syncInfJump(cfg.infiniteJump); syncNoclip(cfg.noclip); syncPlayerFov(cfg.playerFov)
+        syncFullBright(cfg.fullBright); syncNoShadow(cfg.noShadow)
+        syncFastMode(cfg.fastMode); syncAntiAfk(cfg.antiAfk)
+        syncKey(cfg.uiKey); syncAccent(cfg.accentR,cfg.accentG,cfg.accentB)
+        wmF.Visible=cfg.watermark
+        applyAll()
+    end
+    syncAllUIRef=syncAllUI
+
+    for slot=1,3 do
+        local card=mkF(C.panel,UDim2.new(1,0,0,102),nil,settSc)
+        card.LayoutOrder=20+slot; mkC(10,card); mkSt(1,C.borderDim,card); mkP(10,10,12,12,card)
+        card.MouseEnter:Connect(function() tw(card,0.1,{BackgroundColor3=C.panelHov}) end)
+        card.MouseLeave:Connect(function() tw(card,0.1,{BackgroundColor3=C.panel}) end)
+
+        local badge=mkF(C.accent,UDim2.new(0,28,0,28),UDim2.new(0,0,0,0),card)
+        mkC(8,badge); badge.BackgroundTransparency=0.35
+        local bl=mkTxt(tostring(slot),14,Color3.new(1,1,1),true,Enum.TextXAlignment.Center,badge)
+        bl.Size=UDim2.new(1,0,1,0)
+
+        local nBox=Instance.new("TextBox"); nBox.BackgroundColor3=C.track; nBox.BorderSizePixel=0
+        nBox.Text=slotNames[slot]; nBox.PlaceholderText="Config name..."
+        nBox.TextSize=12; nBox.Font=Enum.Font.GothamBold
+        nBox.TextColor3=C.textPri; nBox.PlaceholderColor3=C.textDim
+        nBox.TextXAlignment=Enum.TextXAlignment.Left; nBox.ClearTextOnFocus=false
+        nBox.Size=UDim2.new(1,-36,0,28); nBox.Position=UDim2.new(0,36,0,0)
+        nBox.Parent=card; mkC(7,nBox); mkP(0,0,10,0,nBox); mkSt(1,C.border,nBox)
+        local s=slot
+        nBox.FocusLost:Connect(function()
+            local t=nBox.Text; if t=="" then t="Config "..s; nBox.Text=t end
+            slotNames[s]=t; pcall(writefile,nPath(),HttpService:JSONEncode(slotNames))
+        end)
+        slotNameSyncs[slot]=function(v) nBox.Text=v end
+
+        local svBtn=Instance.new("TextButton"); svBtn.Size=UDim2.new(0.48,0,0,34)
+        svBtn.Position=UDim2.new(0,0,1,-34); svBtn.BackgroundColor3=C.accent
+        svBtn.BackgroundTransparency=0.15; svBtn.BorderSizePixel=0
+        svBtn.Text="💾  "..T("save"); svBtn.TextSize=12; svBtn.Font=Enum.Font.GothamBold
+        svBtn.TextColor3=Color3.new(1,1,1); svBtn.Parent=card; mkC(7,svBtn)
+
+        local ldBtn=Instance.new("TextButton"); ldBtn.Size=UDim2.new(0.48,0,0,34)
+        ldBtn.Position=UDim2.new(0.52,0,1,-34); ldBtn.BackgroundColor3=C.panel
+        ldBtn.BorderSizePixel=0; ldBtn.Text="📂  "..T("load")
+        ldBtn.TextSize=12; ldBtn.Font=Enum.Font.GothamBold
+        ldBtn.TextColor3=C.textPri; ldBtn.Parent=card; mkC(7,ldBtn); mkSt(1,C.border,ldBtn)
+
+        svBtn.MouseButton1Click:Connect(function()
+            local ok=saveSlot(s)
+            tw(svBtn,0.15,{BackgroundColor3=ok and C.green or C.red})
+            task.delay(1.5,function() tw(svBtn,0.3,{BackgroundColor3=C.accent}) end)
+            notify(slotNames[s],ok and T("saved").." ✓" or "Error!",ok and "success" or "error")
+        end)
+        ldBtn.MouseButton1Click:Connect(function()
+            local ok=loadSlot(s)
+            if ok then
+                local newAccent=Color3.fromRGB(cfg.accentR,cfg.accentG,cfg.accentB)
+                local newC=deriveTheme(newAccent,Color3.fromRGB(10,18,44))
+                for k,v in pairs(newC) do C[k]=v end
+                local langChanged = (cfg.language~=lang)
+                lang=cfg.language
+                pcall(function()
+                    if isfile(nPath()) then
+                        local d=HttpService:JSONDecode(readfile(nPath()))
+                        for i=1,3 do
+                            if type(d[i])=="string" then
+                                slotNames[i]=d[i]
+                                if slotNameSyncs[i] then slotNameSyncs[i](d[i]) end
+                            end
+                        end
+                    end
+                end)
+                notify(slotNames[s],T("loaded").." ✓","success")
+                if langChanged then
+                    task.delay(0.3,buildGui)
+                else
+                    syncAllUI()
+                end
+            else
+                notify(slotNames[s],"Not found!","error")
+                tw(ldBtn,0.15,{BackgroundColor3=C.red})
+                task.delay(1.5,function() tw(ldBtn,0.3,{BackgroundColor3=C.panel}) end)
+            end
+        end)
+    end
+
+    -- Faol tab: Visuals
+    for n,tf in pairs(tabFrames) do
+        tf.frame.Visible=(n==T("tabVisuals")); tf.acBar.Visible=(n==T("tabVisuals"))
+        tabs[n].BackgroundColor3=(n==T("tabVisuals")) and C.sideAct or C.sidebar
+        tf.nameL.TextColor3=(n==T("tabVisuals")) and C.textPri or C.textSec
+        tf.iconL.TextColor3=(n==T("tabVisuals")) and C.accent or C.textSec
+    end
+    activeTab=T("tabVisuals")
+
+    -- Drag
+    do
+        local dr,ds,sp=false,nil,nil
+        titleBar.InputBegan:Connect(function(i)
+            if i.UserInputType==Enum.UserInputType.MouseButton1 then dr=true; ds=i.Position; sp=win.Position end
+        end)
+        titleBar.InputEnded:Connect(function(i)
+            if i.UserInputType==Enum.UserInputType.MouseButton1 then dr=false end
+        end)
+        dragConnC=UserInputService.InputChanged:Connect(function(i)
+            if dr and i.UserInputType==Enum.UserInputType.MouseMovement then
+                local d=i.Position-ds
+                win.Position=UDim2.new(sp.X.Scale,sp.X.Offset+d.X,sp.Y.Scale,sp.Y.Offset+d.Y)
+            end
+        end)
+    end
+
+    -- UI ochish/yopish tugmasi
+    guiOpen=true
+    toggleConn=UserInputService.InputBegan:Connect(function(i,gp)
+        if gp then return end
+        if i.KeyCode==currentKey then
+            guiOpen=not guiOpen
+            if guiOpen then
+                win.Visible=true; shadowF.Visible=true
+                tw(win,0.28,{Position=UDim2.new(0.5,-WW/2,0.5,-WH/2),BackgroundTransparency=0})
+            else
+                tw(win,0.2,{Position=UDim2.new(0.5,-WW/2,0.5,-WH/2+20),BackgroundTransparency=0.1})
+                task.delay(0.22,function() win.Visible=false; shadowF.Visible=false end)
+            end
+        end
+    end)
+end
+
+buildGui()
+
+-- ══════════════════════════════════════════════════════
+--  BITTA ASOSIY HEARTBEAT  (FPS, ESP+Drawing, Rainbow)
+-- ══════════════════════════════════════════════════════
+local rainbowHue=0
+local fpsTimer=0
+local espTimer=0
+
+RunService.Heartbeat:Connect(function(dt)
+    -- FPS (0.5s)
+    fpsTimer+=dt
+    if fpsTimer>=0.5 then
+        fpsTimer=0
+        local fpsVal=math.floor(1/(dt+0.0001))
+        if wmL then wmL.Text=("ShokhHacks  |  %s  |  FPS: %d"):format(LP.Name,fpsVal) end
+    end
+
+    -- Rainbow hue tick
+    rainbowHue=(rainbowHue+dt*0.25)%1
+    local rbCol = cfg.rainbow and Color3.fromHSV(rainbowHue,0.9,1) or nil
+    if rbBtn then rbBtn.BackgroundColor3 = rbCol or C.red end
+
+    -- ESP + Drawing (Box/Tracers/Name/HealthTag) — 0.05s (20fps chegarasi)
+    espTimer+=dt
+    if espTimer>=0.05 then
+        espTimer=0
+        local espC = (not cfg.rainbow) and espCol() or nil
+        local anyDrawing = cfg.boxEsp or cfg.tracers or cfg.nameEsp or cfg.healthTag
+        local bottomCenter = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
+
+        for _,p in ipairs(Players:GetPlayers()) do
+            if p==LP then continue end
+            local char=p.Character
+            local isTeammate = cfg.teamCheck and p.Team and LP.Team and p.Team==LP.Team
+
+            if not char or isTeammate then
+                if char then removeHL(char) end
+                hideDrawing(p)
+                continue
+            end
+
+            -- Highlight ESP
+            if cfg.esp then addHL(p,char) else removeHL(char) end
+            local h=getHL(char)
+            if h then
+                if rbCol then h.FillColor=rbCol
+                elseif espC then h.FillColor=espC end
+            end
+
+            -- Drawing-based ESP (Box/Tracers/Name/HealthTag)
+            if anyDrawing then
+                local pool=getPool(p)
+                if pool then
+                    local hum=char:FindFirstChildOfClass("Humanoid")
+                    local hrp=char:FindFirstChild("HumanoidRootPart")
+                    local bx,by,bw,bh = getScreenBox(char)
+                    local drawCol = rbCol or espC or Color3.fromRGB(90,150,255)
+
+                    if bx and hum and hrp then
+                        -- Box
+                        if cfg.boxEsp then
+                            pool.box.Position=Vector2.new(bx,by); pool.box.Size=Vector2.new(bw,bh)
+                            pool.box.Color=drawCol; pool.box.Visible=true
+                        else pool.box.Visible=false end
+
+                        -- Tracer
+                        if cfg.tracers then
+                            pool.tracer.From=bottomCenter
+                            pool.tracer.To=Vector2.new(bx+bw/2, by+bh)
+                            pool.tracer.Color=drawCol; pool.tracer.Visible=true
+                        else pool.tracer.Visible=false end
+
+                        -- Name
+                        if cfg.nameEsp then
+                            pool.nameText.Position=Vector2.new(bx+bw/2, by-16)
+                            pool.nameText.Text=p.Name; pool.nameText.Color=drawCol
+                            pool.nameText.Visible=true
+                        else pool.nameText.Visible=false end
+
+                        -- Health Tag
+                        if cfg.healthTag then
+                            local pct=math.clamp(hum.Health/math.max(hum.MaxHealth,1),0,1)
+                            pool.hpBg.Position=Vector2.new(bx-8,by); pool.hpBg.Size=Vector2.new(4,bh)
+                            pool.hpBg.Color=Color3.fromRGB(20,20,26); pool.hpBg.Visible=true
+                            pool.hpFill.Position=Vector2.new(bx-8, by+bh*(1-pct))
+                            pool.hpFill.Size=Vector2.new(4, math.max(bh*pct,1))
+                            pool.hpFill.Color=Color3.fromRGB(math.floor(255*(1-pct)),math.floor(200*pct),60)
+                            pool.hpFill.Visible=true
+                            pool.hpText.Position=Vector2.new(bx-8, by-16)
+                            pool.hpText.Text=math.floor(hum.Health).."/"..math.floor(hum.MaxHealth)
+                            pool.hpText.Color=Color3.fromRGB(220,220,230)
+                            pool.hpText.Visible=true
+                        else
+                            pool.hpBg.Visible=false; pool.hpFill.Visible=false; pool.hpText.Visible=false
+                        end
+                    else
+                        hideDrawing(p)
+                    end
+                end
+            else
+                hideDrawing(p)
+            end
+        end
+    end
+end)
+
+task.delay(0.9,function()
+    notify("ShokhHacks",T("welcome")..LP.Name.."!","success")
+    task.delay(1.1,function() notify(cfg.uiKey,T("toggleHint"),"success") end)
+end)
